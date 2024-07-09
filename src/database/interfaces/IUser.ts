@@ -5,7 +5,7 @@ interface IUser extends Document {
   email: string;
   password: string;
   profilePicture: string;
-  dateOfBirth: string;
+  dateOfBirth: Date;
   created: Date;
   updated: Date;
   isDeleted: boolean;
