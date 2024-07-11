@@ -8,9 +8,7 @@ async function createUser(obj: IUser): Promise<IUser> {
   const password = obj.password;
   const profilePicture = obj.profilePicture;
   const dateOfBirth = obj.dateOfBirth;
-  const created = obj.created;
-  const updated = obj.updated;
-  const isDeleted = obj.isDeleted;
+
   try {
     const existingUser: IUser | null = await User.findOne({ email });
     if (existingUser) {
@@ -23,9 +21,8 @@ async function createUser(obj: IUser): Promise<IUser> {
       password,
       profilePicture,
       dateOfBirth,
-      created,
-      updated,
-      isDeleted,
+      created: Date.now(),
+      updated: Date.now(),
     });
 
     const savedUser: IUser = await newUser.save();
@@ -33,5 +30,55 @@ async function createUser(obj: IUser): Promise<IUser> {
     return savedUser;
   } catch (err) {
     throw new Error("Internal server error");
+  }
+}
+async function updateUser(req: Request, reply: Reply): Promise<void> {
+  interface paramsType {
+    userId?: string;
+  }
+  const params = req.params as paramsType;
+  const userId = params.userId;
+  const { password, profilePicture, dateOfBirth } = req.body as any;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+    const updatedUser: IUser | null = await User.findByIdAndUpdate(
+      userId,
+      {
+        username: user.username,
+        email: user.email,
+        password,
+        profilePicture,
+        dateOfBirth,
+        created: user.created,
+        updated: Date.now(),
+      },
+      { new: true }
+    );
+    reply.status(200).send(updatedUser);
+  } catch (err) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
+async function deleteUser(req: Request, reply: Reply): Promise<void> {
+  interface paramsType {
+    userId?: string;
+  }
+  const params = req.body as paramsType;
+  const userId = params.userId;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user) {
+      reply.status(404).send({ error: "user not found!" });
+    }
+    const deletedUser: IUser | null = await User.findByIdAndUpdate(userId, {
+      isDeleted: true,
+    });
+    reply.status(500).send({ message: "user deleted successfully!" });
+  } catch (err) {
+    reply.status(500).send({ error: "Internal server error" });
   }
 }
