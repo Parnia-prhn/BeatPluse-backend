@@ -11,7 +11,7 @@ const albumSchema = new Schema<IAlbum>({
   },
   releaseDate: {
     type: Date,
-    required: true,
+    required: false,
   },
   coverPicture: {
     type: String,
