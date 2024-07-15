@@ -3,11 +3,11 @@ import { IFollow } from "../interfaces/IFollow";
 const followSchema = new Schema<IFollow>({
   followerId: {
     type: String,
-    required: false,
+    required: true,
   },
   followedId: {
     type: String,
-    required: false,
+    required: true,
   },
   isDeleted: {
     type: Boolean,
