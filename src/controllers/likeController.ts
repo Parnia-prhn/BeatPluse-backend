@@ -1,75 +1,255 @@
 import { FastifyRequest as Request, FastifyReply as Reply } from "fastify";
 import { ILike } from "../database/interfaces/ILike";
 import { Like } from "../database/models/Like";
-import {
-  createLike,
-  getLike,
-  deleteLike,
-  getAllLikes,
-} from "../services/likeService";
-async function createLikeController(obj: ILike): Promise<ILike> {
-  const userId = obj.userId;
-  const songId = obj.songId;
-  const playlistId = obj.playlistId;
-  const albumId = obj.albumId;
-  const podcastId = obj.podcastId;
+import { getAsync, setAsync } from "../configs/redisClient";
 
+async function LikeSongController(req: Request, reply: Reply): Promise<void> {
+  interface ParamsType {
+    userId?: string;
+    songId?: string;
+  }
+  const params = req.params as ParamsType;
+  const userId = params.userId;
+  const songId = params.songId;
   try {
-    const existingLike: ILike | null = await Like.findOne({ userId, songId });
-    if (existingLike) {
-      throw new Error("like already exists");
+    if (!songId) {
+      reply.status(400).send({ error: "song id is missing from the request" });
+      return;
+    }
+    let userLikeCache = await getAsync(`userLike:${userId}`);
+    let userLike;
+    if (userLikeCache) {
+      userLike = JSON.parse(userLikeCache);
+    } else {
+      userLike = await Like.findById(userId);
+      if (!userLike) {
+        userLike = new Like({
+          userId,
+        });
+      }
+      await setAsync(
+        `userLike:${userId}`,
+        JSON.stringify(userLike),
+        "EX",
+        3600
+      );
     }
 
-    const newLike: ILike = await createLike(
-      userId,
-      songId,
-      playlistId,
-      albumId,
-      podcastId
+    const songIndex = userLike.songId.indexOf(songId);
+    if (songIndex > -1) {
+      userLike.songId.splice(songIndex, 1);
+    } else {
+      userLike.songId.push(songId);
+    }
+
+    const updatedUserLike = await userLike.save();
+    await setAsync(
+      `userLike:${userId}`,
+      JSON.stringify(updatedUserLike),
+      "EX",
+      3600
     );
-    return newLike;
+    reply.status(200).send(updatedUserLike);
+  } catch (err) {
+    throw new Error("Internal server error");
+  }
+}
+async function LikePlaylistController(
+  req: Request,
+  reply: Reply
+): Promise<void> {
+  interface ParamsType {
+    userId?: string;
+    playlistId?: string;
+  }
+  const params = req.params as ParamsType;
+  const userId = params.userId;
+  const playlistId = params.playlistId;
+  try {
+    if (!playlistId) {
+      reply
+        .status(400)
+        .send({ error: "playlist id is missing from the request" });
+      return;
+    }
+    let userLikeCache = await getAsync(`userLike:${userId}`);
+    let userLike;
+    if (userLikeCache) {
+      userLike = JSON.parse(userLikeCache);
+    } else {
+      userLike = await Like.findById(userId);
+      if (!userLike) {
+        userLike = new Like({
+          userId,
+        });
+      }
+      await setAsync(
+        `userLike:${userId}`,
+        JSON.stringify(userLike),
+        "EX",
+        3600
+      );
+    }
+
+    const playlistIndex = userLike.playlistId.indexOf(playlistId);
+    if (playlistIndex > -1) {
+      userLike.playlistId.splice(playlistIndex, 1);
+    } else {
+      userLike.playlistId.push(playlistId);
+    }
+
+    const updatedUserLike = await userLike.save();
+    await setAsync(
+      `userLike:${userId}`,
+      JSON.stringify(updatedUserLike),
+      "EX",
+      3600
+    );
+    reply.status(200).send(updatedUserLike);
   } catch (err) {
     throw new Error("Internal server error");
   }
 }
 
-async function deleteLikeController(req: Request, reply: Reply): Promise<void> {
-  const likeId = (req.params as { id: string }).id;
+async function LikeAlbumController(req: Request, reply: Reply): Promise<void> {
+  interface ParamsType {
+    userId?: string;
+    albumId?: string;
+  }
+  const params = req.params as ParamsType;
+  const userId = params.userId;
+  const albumId = params.albumId;
   try {
-    const like: ILike | null = await Like.findById(likeId);
-    if (!like) {
-      reply.status(404).send({ error: "like not found!" });
+    if (!albumId) {
+      reply.status(400).send({ error: "album id is missing from the request" });
+      return;
     }
-    await deleteLike(likeId);
-    reply.status(500).send({ message: "like deleted successfully!" });
+    let userLikeCache = await getAsync(`userLike:${userId}`);
+    let userLike;
+    if (userLikeCache) {
+      userLike = JSON.parse(userLikeCache);
+    } else {
+      userLike = await Like.findById(userId);
+      if (!userLike) {
+        userLike = new Like({
+          userId,
+        });
+      }
+      await setAsync(
+        `userLike:${userId}`,
+        JSON.stringify(userLike),
+        "EX",
+        3600
+      );
+    }
+
+    const albumIndex = userLike.albumId.indexOf(albumId);
+    if (albumIndex > -1) {
+      userLike.albumId.splice(albumIndex, 1);
+    } else {
+      userLike.albumId.push(albumId);
+    }
+
+    const updatedUserLike = await userLike.save();
+    await setAsync(
+      `userLike:${userId}`,
+      JSON.stringify(updatedUserLike),
+      "EX",
+      3600
+    );
+    reply.status(200).send(updatedUserLike);
   } catch (err) {
-    reply.status(500).send({ error: "Internal server error" });
+    throw new Error("Internal server error");
   }
 }
-async function getLikeController(req: Request, reply: Reply) {
-  const likeId = (req.params as { id: string }).id;
+async function LikePodcastController(
+  req: Request,
+  reply: Reply
+): Promise<void> {
+  interface ParamsType {
+    userId?: string;
+    podcastId?: string;
+  }
+  const params = req.params as ParamsType;
+  const userId = params.userId;
+  const podcastId = params.podcastId;
   try {
-    const like: ILike | null = await Like.findById(likeId);
-    if (!like) {
-      reply.status(404).send({ error: "like not found!" });
+    if (!podcastId) {
+      reply
+        .status(400)
+        .send({ error: "podcast id is missing from the request" });
+      return;
     }
-    const likeInfo = await getLike(likeId);
+    let userLikeCache = await getAsync(`userLike:${userId}`);
+    let userLike;
+    if (userLikeCache) {
+      userLike = JSON.parse(userLikeCache);
+    } else {
+      userLike = await Like.findById(userId);
+      if (!userLike) {
+        userLike = new Like({
+          userId,
+        });
+      }
+      await setAsync(
+        `userLike:${userId}`,
+        JSON.stringify(userLike),
+        "EX",
+        3600
+      );
+    }
+
+    const podcastIndex = userLike.podcastId.indexOf(podcastId);
+    if (podcastIndex > -1) {
+      userLike.podcastId.splice(podcastIndex, 1);
+    } else {
+      userLike.podcastId.push(podcastId);
+    }
+
+    const updatedUserLike = await userLike.save();
+    await setAsync(
+      `userLike:${userId}`,
+      JSON.stringify(updatedUserLike),
+      "EX",
+      3600
+    );
+    reply.status(200).send(updatedUserLike);
+  } catch (err) {
+    throw new Error("Internal server error");
+  }
+}
+
+async function getLikeController(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const like: ILike | null = await Like.findById(userId);
+    if (!like) {
+      reply.status(404).send({ error: "user not found!" });
+    }
+    let likeInfo = await getAsync(`userLike:${userId}`);
+    if (likeInfo) {
+      return JSON.parse(likeInfo) as ILike;
+    } else {
+      likeInfo = await Like.findById(userId).exec();
+      if (likeInfo) {
+        await setAsync(
+          `userLike:${userId}`,
+          JSON.stringify(likeInfo),
+          "EX",
+          3600
+        );
+      }
+    }
     reply.send(like);
   } catch (error) {
     reply.status(500).send({ error: "Internal server error" });
   }
 }
-async function getAllLikesController(req: Request, reply: Reply) {
-  try {
-    const likes = await getAllLikes();
-    reply.send(likes);
-  } catch (error) {
-    reply.status(500).send({ error: "Internal server error" });
-  }
-}
+
 export {
-  createLikeController,
-  deleteLikeController,
+  LikeSongController,
+  LikeAlbumController,
+  LikePlaylistController,
+  LikePodcastController,
   getLikeController,
-  getAllLikesController,
 };
