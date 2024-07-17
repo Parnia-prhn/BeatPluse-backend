@@ -12,5 +12,13 @@ interface ISong extends Document {
   created: Date;
   updated: Date;
   isDeleted: boolean;
+  isPlaying: boolean;
+  play: [
+    {
+      isPlayed: boolean;
+      playDate: Date;
+      counter: number;
+    },
+  ];
 }
 export { ISong };

@@ -5,22 +5,58 @@ const likeSchema = new Schema<ILike>({
     type: String,
     required: true,
   },
-  songId: {
-    type: String,
-    required: false,
-  },
-  playlistId: {
-    type: String,
-    required: false,
-  },
-  albumId: {
-    type: String,
-    required: false,
-  },
-  podcastId: {
-    type: String,
-    required: false,
-  },
+  song: [
+    {
+      songId: {
+        type: String,
+        required: false,
+      },
+      isLiked: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+    },
+  ],
+  playlist: [
+    {
+      playlistId: {
+        type: String,
+        required: false,
+      },
+      isLiked: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+    },
+  ],
+  album: [
+    {
+      albumId: {
+        type: String,
+        required: false,
+      },
+      isLiked: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+    },
+  ],
+  podcast: [
+    {
+      podcastId: {
+        type: String,
+        required: false,
+      },
+      isLiked: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+    },
+  ],
 });
 
 export { likeSchema };

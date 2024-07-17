@@ -31,6 +31,24 @@ const albumSchema = new Schema<IAlbum>({
     required: false,
     default: false,
   },
+  play: [
+    {
+      isPlayed: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+      playDate: {
+        type: Date,
+        required: false,
+      },
+      counter: {
+        type: Number,
+        required: false,
+        default: 0,
+      },
+    },
+  ],
 });
 
 export { albumSchema };

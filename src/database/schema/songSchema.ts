@@ -47,6 +47,29 @@ const songSchema = new Schema<ISong>({
     required: false,
     default: false,
   },
+  isPlaying: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
+  play: [
+    {
+      isPlayed: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+      playDate: {
+        type: Date,
+        required: false,
+      },
+      counter: {
+        type: Number,
+        required: false,
+        default: 0,
+      },
+    },
+  ],
 });
 
 export { songSchema };

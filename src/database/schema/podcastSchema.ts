@@ -32,6 +32,24 @@ const podcastSchema = new Schema<IPodcast>({
     required: false,
     default: false,
   },
+  play: [
+    {
+      isPlayed: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+      playDate: {
+        type: Date,
+        required: false,
+      },
+      counter: {
+        type: Number,
+        required: false,
+        default: 0,
+      },
+    },
+  ],
 });
 
 export { podcastSchema };

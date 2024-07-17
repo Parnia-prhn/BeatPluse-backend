@@ -5,6 +5,14 @@ interface IPlaylist extends Document {
   userIdCreator: string;
   created: Date;
   updated: Date;
+  isCollaboration: boolean;
   isDeleted: boolean;
+  play: [
+    {
+      isPlayed: boolean;
+      playDate: Date;
+      counter: number;
+    },
+  ];
 }
 export { IPlaylist };

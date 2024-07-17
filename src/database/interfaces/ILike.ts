@@ -1,9 +1,29 @@
 import { Document } from "mongoose";
 interface ILike extends Document {
   userId: string;
-  songId: string;
-  playlistId: string;
-  albumId: string;
-  podcastId: string;
+  song: [
+    {
+      songId: string;
+      isLiked: boolean;
+    },
+  ];
+  playlist: [
+    {
+      playlistId: string;
+      isLiked: boolean;
+    },
+  ];
+  album: [
+    {
+      albumId: string;
+      isLiked: boolean;
+    },
+  ];
+  podcast: [
+    {
+      podcastId: string;
+      isLiked: boolean;
+    },
+  ];
 }
 export { ILike };

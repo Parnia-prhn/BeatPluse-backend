@@ -21,12 +21,34 @@ const playlistSchema = new Schema<IPlaylist>({
     type: Date,
     required: false,
   },
-
+  isCollaboration: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
   isDeleted: {
     type: Boolean,
     required: false,
     default: false,
   },
+  play: [
+    {
+      isPlayed: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+      playDate: {
+        type: Date,
+        required: false,
+      },
+      counter: {
+        type: Number,
+        required: false,
+        default: 0,
+      },
+    },
+  ],
 });
 
 export { playlistSchema };

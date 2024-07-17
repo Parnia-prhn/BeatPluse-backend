@@ -7,5 +7,12 @@ interface IAlbum extends Document {
   created: Date;
   updated: Date;
   isDeleted: boolean;
+  play: [
+    {
+      isPlayed: boolean;
+      playDate: Date;
+      counter: number;
+    },
+  ];
 }
 export { IAlbum };
