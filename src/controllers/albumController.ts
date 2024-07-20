@@ -163,6 +163,23 @@ async function getPopularAlbums(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getAlbumsSearchByName(req: Request, reply: Reply) {
+  const name = (req.params as { name: string }).name;
+  try {
+    const albums: IAlbum[] | null = await Album.find({
+      title: { $regex: name, $options: "i" }, //  a regular expression for partial match, case insensitive
+      isDeleted: false,
+    }).exec();
+
+    if (!albums || albums.length === 0) {
+      reply.status(404).send({ error: "not found any albums with this name" });
+      return;
+    }
+    reply.status(200).send(albums);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createAlbumController,
   updateAlbumController,
@@ -172,4 +189,5 @@ export {
   getRecentlyPlayedAlbum,
   getMostPlayedAlbumByUser,
   getPopularAlbums,
+  getAlbumsSearchByName,
 };

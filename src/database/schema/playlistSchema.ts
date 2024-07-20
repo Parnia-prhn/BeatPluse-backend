@@ -31,6 +31,10 @@ const playlistSchema = new Schema<IPlaylist>({
     required: false,
     default: false,
   },
+  genre: {
+    type: String,
+    required: false,
+  },
   play: [
     {
       userIdPlayer: {

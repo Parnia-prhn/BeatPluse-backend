@@ -166,6 +166,23 @@ async function getPopularRadios(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getRadiosSearchByName(req: Request, reply: Reply) {
+  const name = (req.params as { name: string }).name;
+  try {
+    const radios: IRadio[] | null = await Radio.find({
+      title: { $regex: name, $options: "i" }, //  a regular expression for partial match, case insensitive
+      isDeleted: false,
+    }).exec();
+
+    if (!radios || radios.length === 0) {
+      reply.status(404).send({ error: "not found any radios with this name" });
+      return;
+    }
+    reply.status(200).send(radios);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createRadioController,
   updateRadioController,
@@ -175,4 +192,5 @@ export {
   getRecentlyPlayedRadio,
   getMostPlayedRadioByUser,
   getPopularRadios,
+  getRadiosSearchByName,
 };

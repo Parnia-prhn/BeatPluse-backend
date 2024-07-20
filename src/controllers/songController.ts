@@ -10,6 +10,8 @@ import {
 } from "../services/songService";
 import { IUser } from "../database/interfaces/IUser";
 import { User } from "../database/models/User";
+import { IGenre } from "../database/interfaces/IGenre";
+import { Genre } from "../database/models/Genre";
 async function createSongController(obj: ISong): Promise<ISong> {
   const title = obj.title;
   const artistId = obj.artistId;
@@ -158,6 +160,7 @@ async function getPopularSongs(req: Request, reply: Reply) {
           lyrics: { $first: "$lyrics" },
           created: { $first: "$created" },
           updated: { $first: "$updated" },
+          genre: { $first: "$genre" },
           isDeleted: { $first: "$isDeleted" },
           isPlaying: { $first: "$isPlaying" },
           totalPlayCount: { $sum: "$play.counter" }, // Sum the play counters
@@ -173,6 +176,47 @@ async function getPopularSongs(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getSongsOfGenre(req: Request, reply: Reply) {
+  const genreName = (req.params as { genreName: string }).genreName;
+  try {
+    const genre: IGenre | null = await Genre.findOne({
+      name: genreName,
+    }).exec();
+    if (!genre || genre.isDeleted) {
+      reply.status(404).send({ error: "genre not found" });
+      return;
+    }
+    const songs: ISong[] | null = await Song.find({
+      genre: genreName,
+      isDeleted: false,
+    }).exec();
+
+    if (!songs || songs.length === 0) {
+      reply.status(404).send({ error: "not found any songs with this genre" });
+      return;
+    }
+    reply.status(200).send(songs);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getSongsSearchByName(req: Request, reply: Reply) {
+  const name = (req.params as { name: string }).name;
+  try {
+    const songs: ISong[] | null = await Song.find({
+      title: { $regex: name, $options: "i" }, //  a regular expression for partial match, case insensitive
+      isDeleted: false,
+    }).exec();
+
+    if (!songs || songs.length === 0) {
+      reply.status(404).send({ error: "not found any songs with this name" });
+      return;
+    }
+    reply.status(200).send(songs);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createSongController,
   updateSongController,
@@ -182,4 +226,6 @@ export {
   getRecentlyPlayedSong,
   getMostPlayedSongByUser,
   getPopularSongs,
+  getSongsOfGenre,
+  getSongsSearchByName,
 };

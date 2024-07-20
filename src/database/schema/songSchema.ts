@@ -41,7 +41,10 @@ const songSchema = new Schema<ISong>({
     type: Date,
     required: false,
   },
-
+  genre: {
+    type: String,
+    required: false,
+  },
   isDeleted: {
     type: Boolean,
     required: false,

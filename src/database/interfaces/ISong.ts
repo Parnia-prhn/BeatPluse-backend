@@ -11,6 +11,7 @@ interface ISong extends Document {
   lyrics: string;
   created: Date;
   updated: Date;
+  genre: string;
   isDeleted: boolean;
   isPlaying: boolean;
   play: [

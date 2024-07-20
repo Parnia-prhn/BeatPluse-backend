@@ -7,6 +7,7 @@ interface IPlaylist extends Document {
   updated: Date;
   isCollaboration: boolean;
   isDeleted: boolean;
+  genre: string;
   play: [
     {
       userIdPlayer: string;

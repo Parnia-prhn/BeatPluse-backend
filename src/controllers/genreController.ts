@@ -78,10 +78,28 @@ async function getAllGenresController(req: Request, reply: Reply) {
     reply.status(500).send({ error: "Internal server error" });
   }
 }
+async function getGenresSearchByName(req: Request, reply: Reply) {
+  const name = (req.params as { name: string }).name;
+  try {
+    const genres: IGenre[] | null = await Genre.find({
+      name: { $regex: name, $options: "i" }, //  a regular expression for partial match, case insensitive
+      isDeleted: false,
+    }).exec();
+
+    if (!genres || genres.length === 0) {
+      reply.status(404).send({ error: "not found any genres with this name" });
+      return;
+    }
+    reply.status(200).send(genres);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createGenreController,
   updateGenreController,
   deleteGenreController,
   getGenreController,
   getAllGenresController,
+  getGenresSearchByName,
 };

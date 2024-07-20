@@ -10,6 +10,8 @@ import {
   getPlaylist,
   getAllPlaylists,
 } from "../services/playlistService";
+import { IGenre } from "../database/interfaces/IGenre";
+import { Genre } from "../database/models/Genre";
 async function createPlaylistController(obj: IPlaylist): Promise<IPlaylist> {
   const title = obj.title;
   const description = obj.description;
@@ -180,6 +182,7 @@ async function getPopularPlaylists(req: Request, reply: Reply) {
           updated: { $first: "$updated" },
           isCollaboration: { $first: "$isCollaboration" },
           isDeleted: { $first: "$isDeleted" },
+          genre: { $first: "$genre" },
           totalPlayCount: { $sum: "$play.counter" }, // Sum the play counters
         },
       },
@@ -189,6 +192,51 @@ async function getPopularPlaylists(req: Request, reply: Reply) {
       reply.status(404).send({ error: "not found any playlists" });
     }
     reply.status(200).send(popularPlaylists);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getPlaylistsOfGenre(req: Request, reply: Reply) {
+  const genreName = (req.params as { genreName: string }).genreName;
+  try {
+    const genre: IGenre | null = await Genre.findOne({
+      name: genreName,
+    }).exec();
+    if (!genre || genre.isDeleted) {
+      reply.status(404).send({ error: "genre not found" });
+      return;
+    }
+    const playlists: IPlaylist[] | null = await Playlist.find({
+      genre: genreName,
+      isDeleted: false,
+    }).exec();
+
+    if (!playlists || playlists.length === 0) {
+      reply
+        .status(404)
+        .send({ error: "not found any playlists with this genre" });
+      return;
+    }
+    reply.status(200).send(playlists);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getPlaylistsSearchByName(req: Request, reply: Reply) {
+  const name = (req.params as { name: string }).name;
+  try {
+    const playlists: IPlaylist[] | null = await Playlist.find({
+      title: { $regex: name, $options: "i" }, //  a regular expression for partial match, case insensitive
+      isDeleted: false,
+    }).exec();
+
+    if (!playlists || playlists.length === 0) {
+      reply
+        .status(404)
+        .send({ error: "not found any playlists with this name" });
+      return;
+    }
+    reply.status(200).send(playlists);
   } catch (error) {
     reply.status(500).send({ error: "internal server error" });
   }
@@ -204,4 +252,6 @@ export {
   getPlaylistsMadeByUser,
   getMostPlayedPlaylistsByUser,
   getPopularPlaylists,
+  getPlaylistsOfGenre,
+  getPlaylistsSearchByName,
 };

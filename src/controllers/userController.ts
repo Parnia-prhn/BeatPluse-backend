@@ -92,10 +92,28 @@ async function getAllUsersController(req: Request, reply: Reply) {
     reply.status(500).send({ error: "Internal server error" });
   }
 }
+async function getUsersSearchByName(req: Request, reply: Reply) {
+  const name = (req.params as { name: string }).name;
+  try {
+    const users: IUser[] | null = await User.find({
+      username: { $regex: name, $options: "i" }, //  a regular expression for partial match, case insensitive
+      isDeleted: false,
+    }).exec();
+
+    if (!users || users.length === 0) {
+      reply.status(404).send({ error: "not found any users with this name" });
+      return;
+    }
+    reply.status(200).send(users);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createUserController,
   updateUserController,
   deleteUserController,
   getUserController,
   getAllUsersController,
+  getUsersSearchByName,
 };

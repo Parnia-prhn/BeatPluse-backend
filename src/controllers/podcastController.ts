@@ -172,6 +172,25 @@ async function getPopularPodcasts(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getPodcastsSearchByName(req: Request, reply: Reply) {
+  const name = (req.params as { name: string }).name;
+  try {
+    const podcasts: IPodcast[] | null = await Podcast.find({
+      title: { $regex: name, $options: "i" }, //  a regular expression for partial match, case insensitive
+      isDeleted: false,
+    }).exec();
+
+    if (!podcasts || podcasts.length === 0) {
+      reply
+        .status(404)
+        .send({ error: "not found any podcasts with this name" });
+      return;
+    }
+    reply.status(200).send(podcasts);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createPodcastController,
   updatePodcastController,
@@ -181,4 +200,5 @@ export {
   getRecentlyPlayedPodcast,
   getMostPlayedPodcastByUser,
   getPopularPodcasts,
+  getPodcastsSearchByName,
 };
