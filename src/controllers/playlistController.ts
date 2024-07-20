@@ -1,6 +1,8 @@
 import { FastifyRequest as Request, FastifyReply as Reply } from "fastify";
 import { IPlaylist } from "../database/interfaces/IPlaylist";
 import { Playlist } from "../database/models/Playlist";
+import { User } from "../database/models/User";
+import { IUser } from "../database/interfaces/IUser";
 import {
   createPlaylist,
   updatePlaylist,
@@ -76,7 +78,7 @@ async function getPlaylistController(req: Request, reply: Reply) {
       reply.status(404).send({ error: "Playlist not found!" });
     }
     const playlistInfo = await getPlaylist(playlistId);
-    reply.send(playlist);
+    reply.send(playlistInfo);
   } catch (error) {
     reply.status(500).send({ error: "Internal server error" });
   }
@@ -89,10 +91,37 @@ async function getAllPlaylistsController(req: Request, reply: Reply) {
     reply.status(500).send({ error: "Internal server error" });
   }
 }
+
+async function getRecentlyPlayedPlaylist(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+    const playlists: IPlaylist[] | null = await Playlist.find({
+      "play.userIdPlayer": userId,
+      isDeleted: false,
+    })
+      .sort({ "play.playDate": -1 })
+      .limit(5)
+      .exec();
+
+    if (!playlists || playlists.length === 0) {
+      reply.status(404).send({ error: "User hasn't played any playlists yet" });
+      return;
+    }
+    reply.status(200).send(playlists);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createPlaylistController,
   updatePlaylistController,
   deletePlaylistController,
   getPlaylistController,
   getAllPlaylistsController,
+  getRecentlyPlayedPlaylist,
 };

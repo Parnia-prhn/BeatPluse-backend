@@ -15,6 +15,7 @@ interface ISong extends Document {
   isPlaying: boolean;
   play: [
     {
+      userIdPlayer: string;
       isPlayed: boolean;
       playDate: Date;
       counter: number;

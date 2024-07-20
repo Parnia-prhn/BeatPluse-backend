@@ -30,6 +30,10 @@ const radioSchema = new Schema<IRadio>({
   },
   play: [
     {
+      userIdPlayer: {
+        type: String,
+        required: false,
+      },
       isPlayed: {
         type: Boolean,
         required: false,

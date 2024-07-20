@@ -34,6 +34,10 @@ const podcastSchema = new Schema<IPodcast>({
   },
   play: [
     {
+      userIdPlayer: {
+        type: String,
+        required: false,
+      },
       isPlayed: {
         type: Boolean,
         required: false,

@@ -9,6 +9,7 @@ interface IPlaylist extends Document {
   isDeleted: boolean;
   play: [
     {
+      userIdPlayer: string;
       isPlayed: boolean;
       playDate: Date;
       counter: number;
