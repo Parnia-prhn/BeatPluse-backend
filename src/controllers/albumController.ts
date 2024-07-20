@@ -135,6 +135,34 @@ async function getMostPlayedAlbumByUser(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getPopularAlbums(req: Request, reply: Reply) {
+  try {
+    const popularAlbums = await Album.aggregate([
+      { $match: { isDeleted: false } },
+      { $unwind: "$play" }, // Deconstruct the play array
+      {
+        $group: {
+          _id: "$_id",
+          title: { $first: "$title" },
+          artistId: { $first: "$artistId" },
+          releaseDate: { $first: "$releaseDate" },
+          coverPicture: { $first: "$coverPicture" },
+          created: { $first: "$created" },
+          updated: { $first: "$updated" },
+          isDeleted: { $first: "$isDeleted" },
+          totalPlayCount: { $sum: "$play.counter" }, // Sum the play counters
+        },
+      },
+      { $sort: { totalPlayCount: -1 } }, // Sort by total play count in descending order
+    ]).exec();
+    if (!popularAlbums || popularAlbums.length === 0) {
+      reply.status(404).send({ error: "not found any Albums" });
+    }
+    reply.status(200).send(popularAlbums);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createAlbumController,
   updateAlbumController,
@@ -143,4 +171,5 @@ export {
   getAllAlbumsController,
   getRecentlyPlayedAlbum,
   getMostPlayedAlbumByUser,
+  getPopularAlbums,
 };

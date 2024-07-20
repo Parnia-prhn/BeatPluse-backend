@@ -136,6 +136,33 @@ async function getMostPlayedArtistByUser(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getPopularArtists(req: Request, reply: Reply) {
+  try {
+    const popularArtists = await Artist.aggregate([
+      { $match: { isDeleted: false } },
+      { $unwind: "$play" }, // Deconstruct the play array
+      {
+        $group: {
+          _id: "$_id",
+          name: { $first: "$name" },
+          description: { $first: "$description" },
+          profilePicture: { $first: "$profilePicture" },
+          created: { $first: "$created" },
+          updated: { $first: "$updated" },
+          isDeleted: { $first: "$isDeleted" },
+          totalPlayCount: { $sum: "$play.counter" }, // Sum the play counters
+        },
+      },
+      { $sort: { totalPlayCount: -1 } }, // Sort by total play count in descending order
+    ]).exec();
+    if (!popularArtists || popularArtists.length === 0) {
+      reply.status(404).send({ error: "not found any Artists" });
+    }
+    reply.status(200).send(popularArtists);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createArtist,
   updateArtist,
@@ -144,4 +171,5 @@ export {
   getAllArtists,
   getRecentlyPlayedArtist,
   getMostPlayedArtistByUser,
+  getPopularArtists,
 };

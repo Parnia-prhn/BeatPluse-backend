@@ -144,6 +144,34 @@ async function getMostPlayedPodcastByUser(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getPopularPodcasts(req: Request, reply: Reply) {
+  try {
+    const popularPodcasts = await Podcast.aggregate([
+      { $match: { isDeleted: false } },
+      { $unwind: "$play" }, // Deconstruct the play array
+      {
+        $group: {
+          _id: "$_id",
+          title: { $first: "$title" },
+          hostId: { $first: "$hostId" },
+          description: { $first: "$description" },
+          coverPicture: { $first: "$coverPicture" },
+          created: { $first: "$created" },
+          updated: { $first: "$updated" },
+          isDeleted: { $first: "$isDeleted" },
+          totalPlayCount: { $sum: "$play.counter" }, // Sum the play counters
+        },
+      },
+      { $sort: { totalPlayCount: -1 } }, // Sort by total play count in descending order
+    ]).exec();
+    if (!popularPodcasts || popularPodcasts.length === 0) {
+      reply.status(404).send({ error: "not found any Podcasts" });
+    }
+    reply.status(200).send(popularPodcasts);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createPodcastController,
   updatePodcastController,
@@ -152,4 +180,5 @@ export {
   getAllPodcastsController,
   getRecentlyPlayedPodcast,
   getMostPlayedPodcastByUser,
+  getPopularPodcasts,
 };
