@@ -119,10 +119,37 @@ async function getRecentlyPlayedPodcast(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getMostPlayedPodcastByUser(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+    const podcasts: IPodcast[] | null = await Podcast.find({
+      "play.userIdPlayer": userId,
+      isDeleted: false,
+    })
+      .sort({ "play.counter": -1 })
+      .limit(5)
+      .exec();
+
+    if (!podcasts || podcasts.length === 0) {
+      reply.status(404).send({ error: "User hasn't played any podcasts yet" });
+      return;
+    }
+    reply.status(200).send(podcasts);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createPodcastController,
   updatePodcastController,
   deletePodcastController,
   getPodcastController,
   getAllPodcastsController,
+  getRecentlyPlayedPodcast,
+  getMostPlayedPodcastByUser,
 };

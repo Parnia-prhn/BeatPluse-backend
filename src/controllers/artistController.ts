@@ -111,6 +111,31 @@ async function getRecentlyPlayedArtist(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getMostPlayedArtistByUser(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+    const artists: IArtist[] | null = await Artist.find({
+      "play.userIdPlayer": userId,
+      isDeleted: false,
+    })
+      .sort({ "play.counter": -1 })
+      .limit(5)
+      .exec();
+
+    if (!artists || artists.length === 0) {
+      reply.status(404).send({ error: "User hasn't played any artists yet" });
+      return;
+    }
+    reply.status(200).send(artists);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createArtist,
   updateArtist,
@@ -118,4 +143,5 @@ export {
   deleteArtist,
   getAllArtists,
   getRecentlyPlayedArtist,
+  getMostPlayedArtistByUser,
 };

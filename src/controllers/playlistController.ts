@@ -117,6 +117,55 @@ async function getRecentlyPlayedPlaylist(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getPlaylistsMadeByUser(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+    const playlists: IPlaylist[] | null = await Playlist.find({
+      userIdCreator: userId,
+      isDeleted: false,
+    }).exec();
+    if (!playlists || playlists.length === 0) {
+      reply
+        .status(404)
+        .send({ error: "The user has not created a playlist yet" });
+      return;
+    }
+    reply.status(200).send(playlists);
+  } catch (error) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
+async function getMostPlayedPlaylistsByUser(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+    const playlists: IPlaylist[] | null = await Playlist.find({
+      "play.userIdPlayer": userId,
+      isDeleted: false,
+    })
+      .sort({ "play.counter": -1 })
+      .limit(5)
+      .exec();
+
+    if (!playlists || playlists.length === 0) {
+      reply.status(404).send({ error: "User hasn't played any playlists yet" });
+      return;
+    }
+    reply.status(200).send(playlists);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getPlaylistCustomizedForUser(req: Request, reply: Reply) {}
 export {
   createPlaylistController,
   updatePlaylistController,
@@ -124,4 +173,6 @@ export {
   getPlaylistController,
   getAllPlaylistsController,
   getRecentlyPlayedPlaylist,
+  getPlaylistsMadeByUser,
+  getMostPlayedPlaylistsByUser,
 };
