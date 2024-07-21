@@ -181,11 +181,11 @@ async function getArtistsSearchByName(req: Request, reply: Reply) {
   }
 }
 export {
-  createArtist,
-  updateArtist,
-  getArtist,
-  deleteArtist,
-  getAllArtists,
+  createArtistrController,
+  updateArtistController,
+  getArtistController,
+  getAllArtistsController,
+  deleteArtistController,
   getRecentlyPlayedArtist,
   getMostPlayedArtistByUser,
   getPopularArtists,

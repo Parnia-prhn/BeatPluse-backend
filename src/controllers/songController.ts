@@ -316,6 +316,111 @@ async function getSongInformation(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function streamSong(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  const songId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "user not found. login first" });
+      return;
+    }
+    const song: ISong | null = await Song.findById(songId);
+    if (!song || song.isDeleted) {
+      reply.status(404).send({ error: "song not found" });
+      return;
+    }
+    // if the user has already played the song
+    const playEntry = song.play.find((entry) => entry.userIdPlayer === userId);
+
+    if (playEntry) {
+      // Increment the counter if the user has already played the song
+      playEntry.counter += 1;
+      playEntry.isPlayed = true;
+      playEntry.playDate = new Date();
+    } else {
+      // Add a new play entry if the user hasn't played the song
+      song.play.push({
+        userIdPlayer: userId,
+        isPlayed: true,
+        playDate: new Date(),
+        counter: 1,
+      });
+    }
+
+    // Set isPlaying to true
+    song.isPlaying = true;
+
+    await song.save();
+
+    // Set a timeout to reset isPlaying to false after the duration of the song
+    const songDuration = parseInt(song.duration, 10) * 1000; // duration is in seconds
+    setTimeout(async () => {
+      song.isPlaying = false;
+      await song.save();
+    }, songDuration);
+
+    reply
+      .status(200)
+      .send({ message: "Streaming started", songUrl: song.fileUrl });
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function addSongToPlaylist(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  const songId = (req.params as { id: string }).id;
+  const playlistId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "user not found. login first" });
+      return;
+    }
+    const song: ISong | null = await Song.findById(songId);
+    if (!song || song.isDeleted) {
+      reply.status(404).send({ error: "song not found" });
+      return;
+    }
+    const playlist: IPlaylist | null = await Playlist.findOne({
+      _id: playlistId,
+      $or: [{ userIdCreator: userId }, { isCollaboration: true }],
+      isDeleted: false,
+    });
+
+    if (!playlist) {
+      reply.status(404).send({ error: "Playlist not found." });
+      return;
+    }
+
+    // Fetch the PlaylistSong
+    const playlistSongs: IPlaylistSong | null = await PlaylistSong.findOne({
+      playlistId,
+    });
+
+    if (!playlistSongs) {
+      reply.status(404).send({ error: "internal error" });
+      return;
+    }
+
+    //  if the song is already in the playlist
+    const songInPlaylist = playlistSongs.songs.find(
+      (song) => song.songId === songId
+    );
+    if (songInPlaylist) {
+      reply.status(400).send({ error: "Song already exists in the playlist." });
+      return;
+    }
+
+    playlistSongs.songs.push({ songId, isDeleted: false });
+
+    await playlistSongs.save();
+
+    reply.status(200).send({ message: "Song added successfully" });
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createSongController,
   updateSongController,
@@ -331,4 +436,6 @@ export {
   getSongsOfArtist,
   getSongsOfAlbum,
   getSongInformation,
+  streamSong,
+  addSongToPlaylist,
 };
