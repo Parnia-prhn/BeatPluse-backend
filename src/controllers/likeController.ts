@@ -2,6 +2,16 @@ import { FastifyRequest as Request, FastifyReply as Reply } from "fastify";
 import { ILike } from "../database/interfaces/ILike";
 import { Like } from "../database/models/Like";
 import { getAsync, setAsync } from "../configs/redisClient";
+import { User } from "../database/models/User";
+import { IPlaylist } from "../database/interfaces/IPlaylist";
+import { IUser } from "../database/interfaces/IUser";
+import { Playlist } from "../database/models/Playlist";
+import { ISong } from "../database/interfaces/ISong";
+import { Song } from "../database/models/Song";
+import { IAlbum } from "../database/interfaces/IAlbum";
+import { Album } from "../database/models/Album";
+import { IPodcast } from "../database/interfaces/IPodcast";
+import { Podcast } from "../database/models/Podcast";
 
 async function LikeSongController(req: Request, reply: Reply): Promise<void> {
   interface ParamsType {
@@ -245,11 +255,130 @@ async function getLikeController(req: Request, reply: Reply) {
     reply.status(500).send({ error: "Internal server error" });
   }
 }
-
+async function getLikedPlaylists(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "the user was not found" });
+      return;
+    }
+    const like: ILike | null = await Like.findOne({ userId });
+    if (!like || like.playlistId.length === 0) {
+      reply
+        .status(404)
+        .send({ error: "The user hasn't liked any playlists yet" });
+      return;
+    }
+    const playlistIds = like.playlistId;
+    const playlists: IPlaylist[] = await Playlist.find({
+      _id: { $in: playlistIds },
+      isDeleted: false,
+    }).exec();
+    if (!playlists || playlists.length === 0) {
+      reply
+        .status(404)
+        .send({ error: "the user hasn't like any playlists yet" });
+      return;
+    }
+    reply.status(200).send(playlists);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getLikedSongs(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "the user was not found" });
+      return;
+    }
+    const like: ILike | null = await Like.findOne({ userId });
+    if (!like || like.songId.length === 0) {
+      reply.status(404).send({ error: "The user hasn't liked any songs yet" });
+      return;
+    }
+    const songIds = like.songId;
+    const songs: ISong[] = await Song.find({
+      _id: { $in: songIds },
+      isDeleted: false,
+    }).exec();
+    if (!songs || songs.length === 0) {
+      reply.status(404).send({ error: "the user hasn't like any songs yet" });
+      return;
+    }
+    reply.status(200).send(songs);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getLikedAlbums(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "the user was not found" });
+      return;
+    }
+    const like: ILike | null = await Like.findOne({ userId });
+    if (!like || like.albumId.length === 0) {
+      reply.status(404).send({ error: "The user hasn't liked any albums yet" });
+      return;
+    }
+    const albumIds = like.albumId;
+    const albums: IAlbum[] = await Album.find({
+      _id: { $in: albumIds },
+      isDeleted: false,
+    }).exec();
+    if (!albums || albums.length === 0) {
+      reply.status(404).send({ error: "the user hasn't like any albums yet" });
+      return;
+    }
+    reply.status(200).send(albums);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getLikedPodcasts(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "the user was not found" });
+      return;
+    }
+    const like: ILike | null = await Like.findOne({ userId });
+    if (!like || like.podcastId.length === 0) {
+      reply
+        .status(404)
+        .send({ error: "The user hasn't liked any podcasts yet" });
+      return;
+    }
+    const podcastIds = like.podcastId;
+    const podcasts: IPodcast[] = await Podcast.find({
+      _id: { $in: podcastIds },
+      isDeleted: false,
+    }).exec();
+    if (!podcasts || podcasts.length === 0) {
+      reply
+        .status(404)
+        .send({ error: "the user hasn't like any podcasts yet" });
+      return;
+    }
+    reply.status(200).send(podcasts);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   LikeSongController,
   LikeAlbumController,
   LikePlaylistController,
   LikePodcastController,
   getLikeController,
+  getLikedPlaylists,
+  getLikedSongs,
+  getLikedAlbums,
+  getLikedPodcasts,
 };

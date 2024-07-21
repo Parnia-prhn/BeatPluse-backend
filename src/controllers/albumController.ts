@@ -10,6 +10,8 @@ import {
 } from "../services/albumService";
 import { IUser } from "../database/interfaces/IUser";
 import { User } from "../database/models/User";
+import { IArtist } from "../database/interfaces/IArtist";
+import { Artist } from "../database/models/Artist";
 async function createAlbumController(obj: IAlbum): Promise<IAlbum> {
   const title = obj.title;
   const artistId = obj.artistId;
@@ -180,6 +182,24 @@ async function getAlbumsSearchByName(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getArtistAlbums(req: Request, reply: Reply) {
+  const artistId = (req.params as { id: string }).id;
+  try {
+    const artist: IArtist | null = await Artist.findById(artistId);
+    if (!artist || artist.isDeleted) {
+      reply.status(404).send({ error: "the artist was not found" });
+      return;
+    }
+    const albums: IAlbum[] | null = await Album.find({ artistId: artistId });
+    if (!albums || albums.length === 0) {
+      reply.status(404).send({ error: "the artist hasn't any albums yet" });
+      return;
+    }
+    reply.status(200).send(albums);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server Error" });
+  }
+}
 export {
   createAlbumController,
   updateAlbumController,
@@ -190,4 +210,5 @@ export {
   getMostPlayedAlbumByUser,
   getPopularAlbums,
   getAlbumsSearchByName,
+  getArtistAlbums,
 };

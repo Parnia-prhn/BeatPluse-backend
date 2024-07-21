@@ -12,6 +12,14 @@ import { IUser } from "../database/interfaces/IUser";
 import { User } from "../database/models/User";
 import { IGenre } from "../database/interfaces/IGenre";
 import { Genre } from "../database/models/Genre";
+import { IPlaylist } from "../database/interfaces/IPlaylist";
+import { Playlist } from "../database/models/Playlist";
+import { PlaylistSong } from "../database/models/PlaylistSong";
+import { IArtist } from "../database/interfaces/IArtist";
+import { Artist } from "../database/models/Artist";
+import { Album } from "../database/models/Album";
+import { IAlbum } from "../database/interfaces/IAlbum";
+import { IPlaylistSong } from "../database/interfaces/IPlaylistSong";
 async function createSongController(obj: ISong): Promise<ISong> {
   const title = obj.title;
   const artistId = obj.artistId;
@@ -217,6 +225,97 @@ async function getSongsSearchByName(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getSongsOfPlaylist(req: Request, reply: Reply) {
+  const playlistId = (req.params as { id: string }).id;
+  try {
+    const playlist: IPlaylist | null = await Playlist.findById(playlistId);
+    if (!playlist || playlist.isDeleted) {
+      reply.status(404).send({ error: "the playlist was not found" });
+      return;
+    }
+    const playlistSongs: IPlaylistSong | null = await PlaylistSong.findOne({
+      playlistId,
+    }).exec();
+
+    if (!playlistSongs) {
+      reply.status(404).send({ error: "The playlist is empty" });
+      return;
+    }
+
+    const songIds = playlistSongs.songs
+      .filter((song) => !song.isDeleted)
+      .map((song) => song.songId);
+    const songs: ISong[] = await Song.find({
+      _id: { $in: songIds },
+      isDeleted: false,
+    }).exec();
+    if (!songs || songs.length === 0) {
+      reply.status(404).send({ error: "the playlist is empty" });
+      return;
+    }
+    reply.status(200).send(songs);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getSongsOfArtist(req: Request, reply: Reply) {
+  const artistId = (req.params as { id: string }).id;
+  try {
+    const artist: IArtist | null = await Artist.findById(artistId);
+    if (!artist || artist.isDeleted) {
+      reply.status(404).send({ error: "The artist was not found" });
+      return;
+    }
+    const songs: ISong[] | null = await Song.find({
+      artistId: artistId,
+      isDeleted: false,
+    }).exec();
+
+    if (!songs || songs.length === 0) {
+      reply.status(404).send({ error: "No songs found for this artist" });
+      return;
+    }
+
+    reply.status(200).send(songs);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getSongsOfAlbum(req: Request, reply: Reply) {
+  const albumId = (req.params as { id: string }).id;
+  try {
+    const album: IAlbum | null = await Album.findById(albumId);
+    if (!album || album.isDeleted) {
+      reply.status(404).send({ error: "The album was not found" });
+      return;
+    }
+    const songs: ISong[] | null = await Song.find({
+      albumId: albumId,
+      isDeleted: false,
+    }).exec();
+
+    if (!songs || songs.length === 0) {
+      reply.status(404).send({ error: "the album is empty" });
+      return;
+    }
+
+    reply.status(200).send(songs);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
+async function getSongInformation(req: Request, reply: Reply) {
+  const songId = (req.params as { id: string }).id;
+  try {
+    const song: ISong | null = await Song.findById(songId);
+    if (!song || song.isDeleted) {
+      reply.status(404).send({ error: "the song was not found" });
+    }
+    reply.status(200).send(song);
+  } catch (error) {
+    reply.status(500).send({ error: "internal server error" });
+  }
+}
 export {
   createSongController,
   updateSongController,
@@ -228,4 +327,8 @@ export {
   getPopularSongs,
   getSongsOfGenre,
   getSongsSearchByName,
+  getSongsOfPlaylist,
+  getSongsOfArtist,
+  getSongsOfAlbum,
+  getSongInformation,
 };
