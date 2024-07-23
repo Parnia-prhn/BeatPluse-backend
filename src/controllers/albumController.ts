@@ -12,6 +12,8 @@ import { IUser } from "../database/interfaces/IUser";
 import { User } from "../database/models/User";
 import { IArtist } from "../database/interfaces/IArtist";
 import { Artist } from "../database/models/Artist";
+import { IFollow } from "../database/interfaces/IFollow";
+import { Follow } from "../database/models/Follow";
 async function createAlbumController(obj: IAlbum): Promise<IAlbum> {
   const title = obj.title;
   const artistId = obj.artistId;
@@ -200,6 +202,46 @@ async function getArtistAlbums(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server Error" });
   }
 }
+async function getNewAlbumsForNotifications(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+
+    const follows: IFollow[] = await Follow.find({
+      followerId: userId,
+      isDeleted: false,
+    }).exec();
+
+    if (!follows || follows.length === 0) {
+      reply.status(404).send({ error: "User is not following any artists" });
+      return;
+    }
+
+    const followedArtistIds = follows.map((follow) => follow.followedId);
+
+    const albums: IAlbum[] = await Album.find({
+      artistId: { $in: followedArtistIds },
+      isDeleted: false,
+    })
+      .sort({ created: -1 })
+      .limit(10)
+      .exec();
+
+    if (!albums || albums.length === 0) {
+      reply.status(404).send({ error: "No new album from followed artists" });
+      return;
+    }
+
+    reply.status(200).send(albums);
+  } catch (error) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
 export {
   createAlbumController,
   updateAlbumController,
@@ -211,4 +253,5 @@ export {
   getPopularAlbums,
   getAlbumsSearchByName,
   getArtistAlbums,
+  getNewAlbumsForNotifications,
 };

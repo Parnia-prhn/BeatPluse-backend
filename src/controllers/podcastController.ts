@@ -10,6 +10,10 @@ import {
 } from "../services/podcastService";
 import { IUser } from "../database/interfaces/IUser";
 import { User } from "../database/models/User";
+import { ILike } from "../database/interfaces/ILike";
+import { Like } from "../database/models/Like";
+import { IPodcastEpisode } from "../database/interfaces/IPodcastEpisode";
+import { PodcastEpisode } from "../database/models/PodcastEpisode";
 async function createPodcastController(obj: IPodcast): Promise<IPodcast> {
   const title = obj.title;
   const hostId = obj.hostId;
@@ -191,6 +195,48 @@ async function getPodcastsSearchByName(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function getNewEpisodeOfPodcastsForNotifications(
+  req: Request,
+  reply: Reply
+) {
+  const userId = (req.params as { id: string }).id;
+
+  try {
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+
+    const userLikes: ILike | null = await Like.findOne({ userId }).exec();
+
+    if (
+      !userLikes ||
+      !userLikes.podcastId ||
+      userLikes.podcastId.length === 0
+    ) {
+      reply.status(404).send({ error: "User has not liked any podcasts" });
+      return;
+    }
+
+    const episodes: IPodcastEpisode[] = await PodcastEpisode.find({
+      podcastId: { $in: userLikes.podcastId },
+      isDeleted: false,
+    })
+      .sort({ releaseDate: -1 })
+      .limit(10)
+      .exec();
+
+    if (!episodes || episodes.length === 0) {
+      reply.status(404).send({ error: "No new episodes from liked podcasts" });
+      return;
+    }
+
+    reply.status(200).send(episodes);
+  } catch (error) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
 export {
   createPodcastController,
   updatePodcastController,
@@ -201,4 +247,5 @@ export {
   getMostPlayedPodcastByUser,
   getPopularPodcasts,
   getPodcastsSearchByName,
+  getNewEpisodeOfPodcastsForNotifications,
 };
