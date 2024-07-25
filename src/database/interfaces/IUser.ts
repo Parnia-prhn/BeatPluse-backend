@@ -9,5 +9,7 @@ interface IUser extends Document {
   created: Date;
   updated: Date;
   isDeleted: boolean;
+  otp: string;
+  otpExpire: Date;
 }
 export { IUser };

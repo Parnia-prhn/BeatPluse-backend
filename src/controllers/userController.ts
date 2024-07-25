@@ -14,19 +14,18 @@ async function createUserController(obj: IUser): Promise<IUser> {
   const password = obj.password;
   const profilePicture = obj.profilePicture;
   const dateOfBirth = obj.dateOfBirth;
+  const otp = obj.otp;
+  const otpExpire = obj.otpExpire;
 
   try {
-    const existingUser: IUser | null = await User.findOne({ email });
-    if (existingUser) {
-      throw new Error("email already exists");
-    }
-
     const newUser: IUser = await createUser(
       username,
       email,
       password,
       profilePicture,
-      dateOfBirth
+      dateOfBirth,
+      otp,
+      otpExpire
     );
     return newUser;
   } catch (err) {

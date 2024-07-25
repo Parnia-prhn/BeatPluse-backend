@@ -35,6 +35,14 @@ const userSchema = new Schema<IUser>({
     required: false,
     default: false,
   },
+  otp: {
+    type: String,
+    required: false,
+  },
+  otpExpire: {
+    type: Date,
+    required: false,
+  },
 });
 
 export { userSchema };

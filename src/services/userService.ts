@@ -7,7 +7,9 @@ async function createUser(
   email: string,
   password: string,
   profilePicture: string | null,
-  dateOfBirth: Date | null
+  dateOfBirth: Date | null,
+  otp: string | null,
+  otpExpire: string | null
 ): Promise<IUser> {
   const user = new User({
     username,
@@ -17,6 +19,8 @@ async function createUser(
     date_of_birth: dateOfBirth,
     created: Date.now(),
     updated: Date.now(),
+    otp,
+    otpExpire,
   });
   await user.save();
   return user;
