@@ -2,19 +2,19 @@ import nodemailer from "nodemailer";
 
 export async function sendOtpEmail(to: string, otp: string) {
   const transporter = nodemailer.createTransport({
-    service: "your-email-provider", // e.g., 'gmail'
+    service: "gmail",
     auth: {
-      user: "your-email@example.com",
-      pass: "your-email-password",
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
   // Email details
   const mailOptions = {
-    from: "your-email@example.com",
+    from: process.env.EMAIL_USER,
     to,
-    subject: "Your OTP Code",
-    text: `Your OTP code is ${otp}. It will expire in 10 minutes.`,
+    subject: "Your verification code - beat+",
+    text: `Your verification code is ${otp}. It will expire in 10 minutes.`,
   };
 
   // Send email

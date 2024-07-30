@@ -15,7 +15,7 @@ async function createUserController(obj: IUser): Promise<IUser> {
   const profilePicture = obj.profilePicture;
   const dateOfBirth = obj.dateOfBirth;
   const otp = obj.otp;
-  const otpExpire = obj.otpExpire;
+  const otpExpires = obj.otpExpires;
 
   try {
     const newUser: IUser = await createUser(
@@ -25,7 +25,7 @@ async function createUserController(obj: IUser): Promise<IUser> {
       profilePicture,
       dateOfBirth,
       otp,
-      otpExpire
+      otpExpires
     );
     return newUser;
   } catch (err) {
@@ -108,6 +108,30 @@ async function getUsersSearchByName(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function verifyOtp(req: Request, reply: Reply) {
+  const { email, otp } = req.body as { email: string; otp: string };
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+
+    if (user.otp !== otp || user.otpExpires < new Date()) {
+      reply.status(400).send({ error: "Invalid or expired OTP" });
+      return;
+    }
+
+    user.otp = ""; // Clear OTP
+    user.otpExpires = new Date(0); // Reset OTP expiration
+    await user.save();
+
+    reply.status(200).send({ message: "Email verified successfully" });
+  } catch (error) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
 export {
   createUserController,
   updateUserController,
@@ -115,4 +139,5 @@ export {
   getUserController,
   getAllUsersController,
   getUsersSearchByName,
+  verifyOtp,
 };

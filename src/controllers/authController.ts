@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import { createUserController } from "./userController";
 import { generateOtp } from "../utils/otp";
 import { sendOtpEmail } from "../utils/email";
+import jwt from "jsonwebtoken";
 
 async function signUp(req: Request, reply: Reply) {
   const userObject = req.body as IUser;
@@ -31,7 +32,7 @@ async function signUp(req: Request, reply: Reply) {
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
     userObject.password = hashedPassword;
     userObject.otp = otp;
-    userObject.otpExpire = otpExpires;
+    userObject.otpExpires = otpExpires;
 
     const newUser: IUser = await createUserController(userObject);
     reply.status(200).send(newUser);
@@ -43,3 +44,37 @@ async function signUp(req: Request, reply: Reply) {
     reply.status(500).send({ error: "Internal server error" });
   }
 }
+async function login(req: Request, reply: Reply) {
+  const { username, password } = req.body as any;
+
+  try {
+    // Find the user by username
+    const user: IUser | null = await User.findOne({ username });
+
+    // Check if the user exists and is not marked as deleted
+    if (!user || user.isDeleted) {
+      return reply.status(404).send({ error: "Username does not exist" });
+    }
+
+    // Check if the password matches
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return reply.status(401).send({ error: "Password is incorrect" });
+    }
+
+    // Generate a JWT token
+    const token = jwt.sign({ userId: user._id }, "beat+_project", {
+      expiresIn: "1h",
+    });
+
+    // Send the token and user information as response
+    reply.status(200).send({
+      message: "Login successful",
+      token,
+      user: { username: user.username, email: user.email },
+    });
+  } catch (error) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
+export { signUp, login };

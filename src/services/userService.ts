@@ -9,7 +9,7 @@ async function createUser(
   profilePicture: string | null,
   dateOfBirth: Date | null,
   otp: string | null,
-  otpExpire: string | null
+  otpExpire: Date | null
 ): Promise<IUser> {
   const user = new User({
     username,

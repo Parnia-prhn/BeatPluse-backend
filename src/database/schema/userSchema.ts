@@ -39,7 +39,7 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: false,
   },
-  otpExpire: {
+  otpExpires: {
     type: Date,
     required: false,
   },
