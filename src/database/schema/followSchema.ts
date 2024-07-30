@@ -5,10 +5,12 @@ const followSchema = new Schema<IFollow>({
     type: String,
     required: true,
   },
-  followedId: {
-    type: String,
-    required: true,
-  },
+  followedId: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
   isDeleted: {
     type: Boolean,
     required: false,
