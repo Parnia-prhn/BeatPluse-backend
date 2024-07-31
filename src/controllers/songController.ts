@@ -22,6 +22,9 @@ import { IAlbum } from "../database/interfaces/IAlbum";
 import { IPlaylistSong } from "../database/interfaces/IPlaylistSong";
 import { IFollow } from "../database/interfaces/IFollow";
 import { Follow } from "../database/models/Follow";
+import { INotification } from "../database/interfaces/INotification";
+import { Notification } from "../database/models/Notification";
+
 async function createSongController(obj: ISong): Promise<ISong> {
   const title = obj.title;
   const artistId = obj.artistId;
@@ -463,6 +466,103 @@ async function getNewSongsForNotifications(req: Request, reply: Reply) {
     reply.status(500).send({ error: "Internal server error" });
   }
 }
+async function getQueueSongs(req: Request, reply: Reply) {
+  const songId = (req.params as { songId: string }).songId;
+  const playlistId = (req.params as { playlistId: string }).playlistId;
+
+  try {
+    // Fetch the playlist
+    const playlist: IPlaylist | null = await Playlist.findById(playlistId);
+    if (!playlist || playlist.isDeleted) {
+      reply
+        .status(404)
+        .send({ error: "The playlist was not found or is deleted" });
+      return;
+    }
+
+    // Fetch the song
+    const currentPlaySong: ISong | null = await Song.findById(songId);
+    if (!currentPlaySong || currentPlaySong.isDeleted) {
+      reply
+        .status(404)
+        .send({ error: "The song does not exist or is deleted" });
+      return;
+    }
+
+    // Fetch the playlist songs mapping
+    const currentPlaylist: IPlaylistSong | null = await PlaylistSong.findOne({
+      playlistId,
+    });
+    if (!currentPlaylist) {
+      reply
+        .status(404)
+        .send({ error: "The playlist's song mapping was not found" });
+      return;
+    }
+
+    // Find the index of the current song in the playlist
+    const indexOfCurrentSong = currentPlaylist.songs.findIndex(
+      (song) => song.songId === songId
+    );
+    if (indexOfCurrentSong === -1) {
+      reply.status(404).send({ error: "The song is not in the playlist" });
+      return;
+    }
+
+    // Get all song IDs in the queue after the current song
+    const queueSongIds = currentPlaylist.songs
+      .slice(indexOfCurrentSong + 1)
+      .filter((song) => !song.isDeleted)
+      .map((song) => song.songId);
+
+    // Fetch the actual song details for the queue
+    const queueSongs: ISong[] = await Song.find({
+      _id: { $in: queueSongIds },
+      isDeleted: false,
+    });
+
+    if (!queueSongs || queueSongs.length === 0) {
+      reply.status(404).send({ error: "The queue is empty" });
+      return;
+    }
+
+    reply.status(200).send(queueSongs);
+  } catch (error) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
+async function getUserPlayedSongs(req: Request, reply: Reply) {
+  const userId = (req.params as { id: string }).id;
+
+  try {
+    // Check if the user exists
+    const user: IUser | null = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      reply.status(404).send({ error: "User not found" });
+      return;
+    }
+
+    // Fetch the last 20 songs played by the user
+    const songs = await Song.find({
+      "play.userIdPlayer": userId,
+      isDeleted: false,
+    })
+      .sort({ "play.playDate": -1 })
+      .limit(20)
+      .exec();
+
+    if (!songs.length) {
+      reply
+        .status(404)
+        .send({ error: "No songs found in user's play history" });
+      return;
+    }
+
+    reply.status(200).send(songs);
+  } catch (error) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
 export {
   createSongController,
   updateSongController,
@@ -481,4 +581,6 @@ export {
   streamSong,
   addSongToPlaylist,
   getNewSongsForNotifications,
+  getQueueSongs,
+  getUserPlayedSongs,
 };

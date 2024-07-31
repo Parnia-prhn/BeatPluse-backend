@@ -65,6 +65,7 @@ async function deletePlaylistController(
     const playlist: IPlaylist | null = await Playlist.findById(playlistId);
     if (!playlist || playlist.isDeleted) {
       reply.status(404).send({ error: "Playlist not found!" });
+      return;
     }
     await deletePlaylist(playlistId);
     reply.status(500).send({ message: "Playlist deleted successfully!" });
@@ -78,6 +79,7 @@ async function getPlaylistController(req: Request, reply: Reply) {
     const playlist: IPlaylist | null = await Playlist.findById(playlistId);
     if (!playlist || playlist.isDeleted) {
       reply.status(404).send({ error: "Playlist not found!" });
+      return;
     }
     const playlistInfo = await getPlaylist(playlistId);
     reply.send(playlistInfo);
@@ -190,6 +192,7 @@ async function getPopularPlaylists(req: Request, reply: Reply) {
     ]).exec();
     if (!popularPlaylists || popularPlaylists.length === 0) {
       reply.status(404).send({ error: "not found any playlists" });
+      return;
     }
     reply.status(200).send(popularPlaylists);
   } catch (error) {
@@ -241,6 +244,36 @@ async function getPlaylistsSearchByName(req: Request, reply: Reply) {
     reply.status(500).send({ error: "internal server error" });
   }
 }
+async function editCollaboratorToPlaylist(req: Request, reply: Reply) {
+  const playlistId = (req.params as { id: string }).id;
+
+  try {
+    // Fetch the playlist by ID
+    const playlist: IPlaylist | null = await Playlist.findById(playlistId);
+    if (!playlist || playlist.isDeleted) {
+      reply.status(404).send({ error: "Playlist not found" });
+      return;
+    }
+
+    // Update the playlist to set it as collaborative
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+      playlistId,
+      {
+        $set: { isCollaboration: !playlist.isCollaboration },
+      },
+      { new: true }
+    );
+
+    if (!updatedPlaylist) {
+      reply.status(500).send({ error: "Failed to update playlist" });
+      return;
+    }
+
+    reply.status(200).send(updatedPlaylist);
+  } catch (error) {
+    reply.status(500).send({ error: "Internal server error" });
+  }
+}
 async function getPlaylistCustomizedForUser(req: Request, reply: Reply) {}
 export {
   createPlaylistController,
@@ -254,4 +287,5 @@ export {
   getPopularPlaylists,
   getPlaylistsOfGenre,
   getPlaylistsSearchByName,
+  editCollaboratorToPlaylist,
 };
